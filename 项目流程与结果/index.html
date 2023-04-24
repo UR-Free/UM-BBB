@@ -240,7 +240,41 @@ for lr in 1e-4 4e-4 5e-4; do
 done
 </code></pre>
 <h2 id="auc">基于AUC的模型评估</h2>
-<p>超参数网格搜索的整体计算量比较大，暂时没拿到完整结果。在这里，我用Uni-Mol给出关于BBBP模型的超参数最优组合：lr=4e-4，batch_size=128，epoch=40，dropout=0，warmup=0.06，进行了模型微调，得到了<a href="../4e-4_128_40_0.0_0.06.csv">预测结果(csv格式)</a>，AUC=0.691。</p>
+<p>超参数网格搜索的整体计算量比较大，暂时没拿到完整结果。在这里，我用Uni-Mol给出关于BBBP模型的超参数最优组合：lr=4e-4，batch_size=128，epoch=40，dropout=0，warmup=0.06，进行了模型微调，得到了<a href="../4e-4_128_40_0.0_0.06.csv">预测结果(csv格式)</a>，AUC=0.691。<br />
+以下是用于将预测结果读取为csv格式并计算AUC的代码：</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+from sklearn.metrics import roc_auc_score
+import sys
+dirs = sys.argv[1]
+def get_csv_results(predict_path, csv_path):
+    predict = pd.read_pickle(predict_path)
+    smi_list, predict_list = [], []
+    for batch in predict:
+        sz = batch[&quot;bsz&quot;]
+        for i in range(sz):
+            smi_list.append(batch[&quot;smi_name&quot;][i])
+            predict_list.append(batch[&quot;prob&quot;][i][1].cpu().tolist())
+    predict_df = pd.DataFrame({&quot;smiles&quot;: smi_list, &quot;predict_prob&quot;: predict_list})
+    predict_df = predict_df.groupby(&quot;smiles&quot;)[&quot;predict_prob&quot;].mean().reset_index()
+    predict_df.to_csv(csv_path,index=False)
+    return predict_df
+
+predict_path='./infer_demo/%s/%s_test.out.pkl'%(dirs,dirs)  # replace to your results path
+csv_path='./infer_demo/%s.csv'%dirs
+predict_df = get_csv_results(predict_path, csv_path)
+predict_df.info(), predict_df.head()
+
+data_df = pd.read_csv('./BBBP/test.csv')
+
+total_df = pd.merge(data_df, predict_df, on='smiles')
+
+y = total_df['p_np'].to_list()
+y_pred = total_df['predict_prob'].to_list()
+
+score = roc_auc_score(y, y_pred)
+print(&quot;AUC = %s&quot;%score)
+</code></pre>
               
             </div>
           </div><footer>
