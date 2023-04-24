@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>技术文档 - UM-BBB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "\u6280\u672f\u6587\u6863";
+        var mkdocs_page_input_path = "document.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> UM-BBB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Welcome to UM-BBB</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">技术文档</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#uni-mol">Uni-Mol文章关于模型的阐述</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#_2">输入</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#_3">注意力头</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#representation">表征(representation)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3d">预测3D坐标</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#uni-mol_1">Uni-Mol的代表性代码</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#_4">使用高斯核函数处理原子间距离信息</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#1">公式1所对应的代码</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2uni-core">公式2对应的代码，来自Uni-Core。</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3unimolpy">公式3所对应的代码，来自unimol.py。</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4transformer_encoder_with_pairpy">公式4对应的代码，来自transformer_encoder_with_pair.py</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../%E9%A1%B9%E7%9B%AE%E6%B5%81%E7%A8%8B%E4%B8%8E%E7%BB%93%E6%9E%9C/">项目流程与结果</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">UM-BBB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>技术文档</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="_1">技术文档</h1>
+<p>为了更好地理解Uni-Mol，文档的前半部分根据文章内容，使用公式和总结性语句描述了Uni-Mol的设计思路，文档的后半部分则展示了一些关键公式和模型思路所对应的代码</p>
+<h2 id="uni-mol">Uni-Mol文章关于模型的阐述</h2>
+<p><img alt="Uni-Mol" src="../unimol.JPG" title="Uni-Mol模型架构" /></p>
+<p>上图是Uni-Mol预训练模型的架构图，可以看出Uni-Mol和经典Transformer模型的异同之处在于：  </p>
+<h3 id="_2">输入</h3>
+<ol>
+<li>由于本身的置换不变性，Transformer模型对输入序列的位置没有分辨能力，为了使模型学习到化合物分子的3D信息，Uni-Mol将坐标信息嵌入到信息传播过程，所以Uni-Mol有两个输入，分别是atom types和atom coordinates。  </li>
+<li>在预训练的自监督学习中，Uni-Mol和Transformer都需要对输入进行mask操作，Uni-Mol关于坐标的mask使用了<em>noise range</em>方法，所谓<em>noise range</em>是指在原始坐标上加一个处于一定范围内的随机坐标。 </li>
+</ol>
+<h3 id="_3">注意力头</h3>
+<ol>
+<li>Uni-Mol构建了三种注意力头，分别关注模型中的Atom Type，Coordinates以及Pair-dist信息</li>
+</ol>
+<h3 id="representation">表征(representation)</h3>
+<ol>
+<li>为了使模型学习到化合物结构中原子信息和原子间距离信息，Uni-Mol在信息传递过程中维持了两种表征，分别是Atom Representation和Pair Representation，这两种表征在模型的自注意力层中进行信息交流。   </li>
+</ol>
+<div class="arithmatex">\[q_{ij}^{l+1}=q_{ij}^{l}+\lbrace{\frac{Q_{i}^{l,h} \lbrace{K_{i}^{l,h}}\rbrace^{T}}{\sqrt{d}}}\mid h \in [1,h]\rbrace \tag{1}\]</div>
+<div class="arithmatex">\[Attention(Q_{i}^{l,h},K_{i}^{l,h},V_{i}^{l,h})=softmax({\frac{Q_{i}^{l,h}\lbrace{K_{i}^{l,h}}\rbrace^{T}}{\sqrt{d}}} + q_{ij}^{l-1,h})V_{i}^{l,h} \tag{2}\]</div>
+<h3 id="3d">预测3D坐标</h3>
+<ol>
+<li>Uni-Mol在模型中引入关注原子间距离的注意力头(Pair-dist Head)，通过计算被掩盖原子坐标与真实值的差异，并与坐标输入值相加，得到原子的预测坐标  </li>
+</ol>
+<div class="arithmatex">\[\hat{x_i}=x_i+\sum_{j = 0}^{n}\frac{(x_i-x_j)C_{ij}}{n} \tag{3}\]</div>
+<div class="arithmatex">\[c_{ij}=ReLU((q_{ij}^{L}-q_{ij}^{0})U)W \tag{4}\]</div>
+<h2 id="uni-mol_1">Uni-Mol的代表性代码</h2>
+<h3 id="_4">使用高斯核函数处理原子间距离信息</h3>
+<pre><code class="language-python">def gaussian(x, mean, std):
+    pi = 3.14159
+    a = (2 * pi) ** 0.5
+    return torch.exp(-0.5 * (((x - mean) / std) ** 2)) / (a * std)
+
+
+class GaussianLayer(nn.Module):
+    def __init__(self, K=128, edge_types=1024):
+        super().__init__()
+        self.K = K
+        self.means = nn.Embedding(1, K)
+        self.stds = nn.Embedding(1, K)
+        self.mul = nn.Embedding(edge_types, 1)
+        self.bias = nn.Embedding(edge_types, 1)
+        nn.init.uniform_(self.means.weight, 0, 3)
+        nn.init.uniform_(self.stds.weight, 0, 3)
+        nn.init.constant_(self.bias.weight, 0)
+        nn.init.constant_(self.mul.weight, 1)
+
+    def forward(self, x, edge_type):
+        mul = self.mul(edge_type).type_as(x)
+        bias = self.bias(edge_type).type_as(x)
+        x = mul * x.unsqueeze(-1) + bias
+        x = x.expand(-1, -1, -1, self.K)
+        mean = self.means.weight.float().view(-1)
+        std = self.stds.weight.float().view(-1).abs() + 1e-5
+        return gaussian(x.float(), mean, std).type_as(self.means.weight)
+
+</code></pre>
+<pre><code class="language-python">def get_dist_features(dist, et):
+    n_node = dist.size(-1)
+    gbf_feature = self.gbf(dist, et)
+    gbf_result = self.gbf_proj(gbf_feature)
+    graph_attn_bias = gbf_result
+    graph_attn_bias = graph_attn_bias.permute(0, 3, 1, 2).contiguous()
+    graph_attn_bias = graph_attn_bias.view(-1, n_node, n_node)
+    return graph_attn_bias
+
+graph_attn_bias = get_dist_features(src_distance, src_edge_type)
+</code></pre>
+<h3 id="1">公式1所对应的代码</h3>
+<pre><code class="language-python">attn_weights = torch.bmm(q, k.transpose(1, 2))
+
+if key_padding_mask is not None:
+    attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
+    attn_weights.masked_fill_(
+        key_padding_mask.unsqueeze(1).unsqueeze(2).to(torch.bool), float(&quot;-inf&quot;)
+    )
+    attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
+
+if return_attn:
+    attn_weights += attn_bias
+    attn = softmax_dropout(
+        attn_weights, self.dropout, self.training, inplace=False,
+    )
+</code></pre>
+<h3 id="2uni-core">公式2对应的代码，来自Uni-Core。</h3>
+<pre><code class="language-python">q, k, v = self.in_proj(query).chunk(3, dim=-1)
+
+q = (
+    q.view(bsz, tgt_len, self.num_heads, self.head_dim)
+    .transpose(1, 2)
+    .contiguous()
+    .view(bsz * self.num_heads, -1, self.head_dim)
+    * self.scaling
+)
+if k is not None:
+    k = (
+        k.view(bsz, -1, self.num_heads, self.head_dim)
+        .transpose(1, 2)
+        .contiguous()
+        .view(bsz * self.num_heads, -1, self.head_dim)
+    )
+if v is not None:
+    v = (
+        v.view(bsz, -1, self.num_heads, self.head_dim)
+        .transpose(1, 2)
+        .contiguous()
+        .view(bsz * self.num_heads, -1, self.head_dim)
+    )
+
+attn_weights = torch.bmm(q, k.transpose(1, 2))
+attn_weights += attn_bias
+attn = softmax_dropout(
+    attn_weights, self.dropout, self.training, inplace=False,
+)
+</code></pre>
+<h3 id="3unimolpy">公式3所对应的代码，来自unimol.py。</h3>
+<pre><code class="language-python">self.pair2coord_proj = NonLinearHead(
+                args.encoder_attention_heads, 1, args.activation_fn
+            )
+
+delta_pos = coords_emb.unsqueeze(1) - coords_emb.unsqueeze(2)
+attn_probs = self.pair2coord_proj(delta_encoder_pair_rep)
+coord_update = delta_pos / atom_num * attn_probs
+coord_update = torch.sum(coord_update, dim=2)
+encoder_coord = coords_emb + coord_update
+
+class NonLinearHead(nn.Module):
+    &quot;&quot;&quot;Head for simple classification tasks.&quot;&quot;&quot;
+
+    def __init__(
+        self,
+        input_dim,
+        out_dim,
+        activation_fn,
+        hidden=None,
+    ):
+        super().__init__()
+        hidden = input_dim if not hidden else hidden
+        self.linear1 = nn.Linear(input_dim, hidden)
+        self.linear2 = nn.Linear(hidden, out_dim)
+        self.activation_fn = utils.get_activation_fn(activation_fn)
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.activation_fn(x)
+        x = self.linear2(x)
+        return x
+</code></pre>
+<h3 id="4transformer_encoder_with_pairpy">公式4对应的代码，来自transformer_encoder_with_pair.py</h3>
+<pre><code class="language-python">input_attn_mask = attn_mask
+
+for i in range(len(self.layers)):
+    x, attn_mask, _ = self.layers[i](
+        x, padding_mask=padding_mask, attn_bias=attn_mask, return_attn=True
+    )
+
+if self.final_layer_norm is not None:
+    x = self.final_layer_norm(x)
+
+delta_pair_repr = attn_mask - input_attn_mask
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Welcome to UM-BBB"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../%E9%A1%B9%E7%9B%AE%E6%B5%81%E7%A8%8B%E4%B8%8E%E7%BB%93%E6%9E%9C/" class="btn btn-neutral float-right" title="项目流程与结果">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../%E9%A1%B9%E7%9B%AE%E6%B5%81%E7%A8%8B%E4%B8%8E%E7%BB%93%E6%9E%9C/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../javascripts/config.js" defer></script>
+      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

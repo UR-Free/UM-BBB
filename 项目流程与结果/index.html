@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>项目流程与结果 - UM-BBB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "\u9879\u76ee\u6d41\u7a0b\u4e0e\u7ed3\u679c";
+        var mkdocs_page_input_path = "\u9879\u76ee\u6d41\u7a0b\u4e0e\u7ed3\u679c.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> UM-BBB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Welcome to UM-BBB</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../document/">技术文档</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">项目流程与结果</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#_2">准备工作</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#finetune">结合超参数搜索的finetune</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#auc">基于AUC的模型评估</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">UM-BBB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>项目流程与结果</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="_1">项目流程与结果</h1>
+<h2 id="_2">准备工作</h2>
+<ul>
+<li>新建Anaconda虚拟环境  </li>
+</ul>
+<pre><code class="language-bash">conda create -n unimol python=3.8
+conda activate unimol
+
+pip3 install torch torchvision torchaudio
+pip3 install rdkit
+pip3 install deepchem 
+</code></pre>
+<ul>
+<li>下载Uni-Mol  </li>
+</ul>
+<pre><code class="language-bash"># 安装Uni-Core
+wget https://github.com/dptech-corp/Uni-Core/archive/refs/heads/main.zip
+unzip main.zip
+cd Uni-Core-main
+python setup.py install
+
+# 安装Uni-Mol
+wget https://github.com/dptech-corp/Uni-Mol/archive/refs/heads/main.zip
+unzip main.zip
+cd Uni-Mol-main/unimol
+python setup.py install
+
+#下载预训练模型权重
+wget https://github.com/dptech-corp/Uni-Mol/releases/download/v0.1/mol_pre_no_h_220816.pt
+</code></pre>
+<ul>
+<li>下载BBBP.csv文件  </li>
+</ul>
+<pre><code class="language-bash">#从MoleculeNet下载BBBP.csv
+mkdir raw_data
+cd raw_data
+wget https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/BBBP.csv
+</code></pre>
+<ul>
+<li>构建数据集</li>
+</ul>
+<pre><code class="language-python">import deepchem as dc
+import pandas as pd
+import numpy
+from rdkit import Chem
+
+df = pd.read_csv(&quot;./raw_data/BBBP.csv&quot;)
+
+# 去除不能被rdkit读取的分子
+ys = []
+smiles = []
+for label, smi in zip(df['p_np'].to_list(),df['smiles'].to_list()):
+    mol = Chem.MolFromSmiles(smi)
+    if mol is not None:
+        ys.append(label)
+        smiles.append(smi)
+
+# 构建新的数据集
+Xs = numpy.ones_like(ys)
+dataset = dc.data.NumpyDataset(X=Xs,y=ys,ids=smiles)
+
+# 划分数据集
+scaffoldsplitter = dc.splits.ScaffoldSplitter()
+train, valid, test = scaffoldsplitter.train_valid_test_split(dataset, 0.8, 0.1, 0.1)
+
+def dataset2df(dataset):
+    data = {&quot;smiles&quot;: list(dataset.ids), &quot;p_np&quot;:list(dataset.y), }
+    df = pd.DataFrame(data) 
+    return df
+
+# 修改了write_lmdb函数，将传入变量由CSV文件变为已经由deepChem划分好的数据集
+def write_lmdb(train, valid, test, outpath='./', nthreads=16):
+    train, valid, test = [dataset2df(dataset) for dataset in [train, valid, test]]
+    for name, content_list in [('train.lmdb', zip(*[train[c].values.tolist() for c in train])),
+                                ('valid.lmdb', zip(*[valid[c].values.tolist() for c in valid])),
+                                ('test.lmdb', zip(*[test[c].values.tolist() for c in test]))]:
+        os.makedirs(outpath, exist_ok=True)
+        output_name = os.path.join(outpath, name)
+        try:
+            os.remove(output_name)
+        except:
+            pass
+        env_new = lmdb.open(
+            output_name,
+            subdir=False,
+            readonly=False,
+            lock=False,
+            readahead=False,
+            meminit=False,
+            max_readers=1,
+            map_size=int(100e9),
+        )
+        txn_write = env_new.begin(write=True)
+        with Pool(nthreads) as pool:
+            i = 0
+            for inner_output in tqdm(pool.imap(smi2coords, content_list)):
+                if inner_output is not None:
+                    txn_write.put(f'{i}'.encode(&quot;ascii&quot;), inner_output)
+                    i += 1
+            print('{} process {} lines'.format(name, i))
+            txn_write.commit()
+            env_new.close()
+
+write_lmdb(train, valid, test, outpath='./BBBP', nthreads=8)
+</code></pre>
+<h2 id="finetune">结合超参数搜索的finetune</h2>
+<p>为了使得模型获得最优的预测性能，在使用预训练模型在BBBP训练集上进行参数优化的同时，针对学习率lr、批样本数、训练轮数、dropout、wramup这5个超参数进行网格搜索。</p>
+<pre><code class="language-bash">data_path='./'  # replace to your data path
+save_dir='./save_demo'  # replace to your save path
+MASTER_PORT=10086
+n_gpu=1
+dict_name='dict.txt'
+weight_path='./weights/mol_pre_no_h_220816.pt'  # replace to your ckpt path
+task_name='BBBP'  # data folder name
+task_num=2
+loss_func='finetune_cross_entropy'
+local_batch_size=32
+only_polar=0 # -1 all h; 0 no h
+conf_size=11
+seed=0
+metric=&quot;valid_agg_auc&quot;
+
+cp example_data/molecule/$dict_name $data_path
+export NCCL_ASYNC_ERROR_HANDLING=1
+export OMP_NUM_THREADS=1
+for lr in 1e-4 4e-4 5e-4; do
+        for batch_size in 64 128 256; do
+                for epoch in 40 60; do
+                        for dropout in 0.0 0.1; do
+                                for warmup in 0.0 0.06 0.1; do
+                                        update_freq=`expr $batch_size / $local_batch_size`
+                                        save_dir='./save_demo/'$lr'_'$batch_size'_'$epoch'_'$dropout'_'$warmup
+                                        python -m torch.distributed.launch --nproc_per_node=$n_gpu --master_port=$MASTER_PORT --use_env \
+        $(which unicore-train) $data_path --task-name $task_name \
+        --user-dir ../unimol --train-subset train --valid-subset valid \
+       --conf-size $conf_size \
+       --num-workers 8 --ddp-backend=c10d \
+       --dict-name $dict_name \
+       --task mol_finetune --loss $loss_func --arch unimol_base  \
+       --classification-head-name $task_name --num-classes $task_num \
+       --optimizer adam --adam-betas '(0.9, 0.99)' --adam-eps 1e-6 --clip-norm 1.0 \
+       --lr-scheduler polynomial_decay --lr $lr --warmup-ratio $warmup --max-epoch $epoch --batch-size $local_batch_size --pooler-dropout $dropout\
+       --update-freq $update_freq --seed $seed \
+       --fp16 --fp16-init-scale 4 --fp16-scale-window 256 \
+       --log-interval 100 --log-format simple \
+       --validate-interval 1 --keep-last-epochs 10 \
+       --finetune-from-model $weight_path \
+       --best-checkpoint-metric $metric --patience 20 \
+       --save-dir $save_dir --only-polar $only_polar \
+       --maximize-best-checkpoint-metric
+                                done
+                        done
+                done
+        done
+done
+</code></pre>
+<h2 id="auc">基于AUC的模型评估</h2>
+<p>超参数网格搜索的整体计算量比较大，暂时没拿到完整结果。在这里，我用Uni-Mol给出关于BBBP模型的超参数最优组合：lr=4e-4，batch_size=128，epoch=40，dropout=0，warmup=0.06，进行了模型微调，得到了[预测结果]，AUC=0.691。</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../document/" class="btn btn-neutral float-left" title="技术文档"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../document/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../javascripts/config.js" defer></script>
+      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
