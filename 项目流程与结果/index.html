@@ -190,12 +190,12 @@ write_lmdb(train, valid, test, outpath='./BBBP', nthreads=8)
 </code></pre>
 <h2 id="finetune">结合超参数搜索的finetune</h2>
 <p>为了使得模型获得最优的预测性能，在使用预训练模型在BBBP训练集上进行参数优化的同时，针对学习率lr、批样本数、训练轮数、dropout、wramup这5个超参数进行网格搜索。</p>
-<pre><code class="language-bash">data_path='./'  # replace to your data path
-save_dir='./save_demo'  # replace to your save path
+<pre><code class="language-bash">data_path='./'  
+save_dir='./save_demo'  
 MASTER_PORT=10086
 n_gpu=1
 dict_name='dict.txt'
-weight_path='./weights/mol_pre_no_h_220816.pt'  # replace to your ckpt path
+weight_path='./weights/mol_pre_no_h_220816.pt' 
 task_name='BBBP'  # data folder name
 task_num=2
 loss_func='finetune_cross_entropy'
@@ -240,8 +240,8 @@ for lr in 1e-4 4e-4 5e-4; do
 done
 </code></pre>
 <h2 id="auc">基于AUC的模型评估</h2>
-<p>超参数网格搜索的整体计算量比较大，暂时没拿到完整结果。在这里，我用Uni-Mol给出关于BBBP模型的超参数最优组合：lr=4e-4，batch_size=128，epoch=40，dropout=0，warmup=0.06，进行了模型微调，得到了<a href="../4e-4_128_40_0.0_0.06.csv">预测结果(csv格式)</a>，AUC=0.691。<br />
-以下是用于将预测结果读取为csv格式并计算AUC的代码：</p>
+<p>根据AUC进行评估，当超参数lr=5e-4，batch_size=256，epoch=40，dropout=0.1，warmup=0.0时，模型训练效果最好，AUC=0.746，这里是对应的<a href="../5e-4_256_40_0.1_0.0.csv">预测结果(csv格式)</a>。  </p>
+<p>以下是用于将预测结果读取为csv格式并计算AUC的代码：</p>
 <pre><code class="language-python">import pandas as pd
 import numpy as np
 from sklearn.metrics import roc_auc_score
@@ -260,10 +260,9 @@ def get_csv_results(predict_path, csv_path):
     predict_df.to_csv(csv_path,index=False)
     return predict_df
 
-predict_path='./infer_demo/%s/%s_test.out.pkl'%(dirs,dirs)  # replace to your results path
+predict_path='./infer_demo/%s_test.out.pkl'%dirs  
 csv_path='./infer_demo/%s.csv'%dirs
 predict_df = get_csv_results(predict_path, csv_path)
-predict_df.info(), predict_df.head()
 
 data_df = pd.read_csv('./BBBP/test.csv')
 
