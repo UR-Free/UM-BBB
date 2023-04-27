@@ -57,6 +57,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#auc">基于AUC的模型评估</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ai-for-drug-design">AI for Drug Design的一些思考</a>
+    </li>
     </ul>
                 </li>
               </ul>
@@ -241,39 +243,12 @@ done
 </code></pre>
 <h2 id="auc">基于AUC的模型评估</h2>
 <p>根据AUC进行评估，当超参数lr=5e-4，batch_size=256，epoch=40，dropout=0.1，warmup=0.0时，模型训练效果最好，AUC=0.746，这里是对应的<a href="../5e-4_256_40_0.1_0.0.csv">预测结果(csv格式)</a>。  </p>
-<p>以下是用于将预测结果读取为csv格式并计算AUC的代码：</p>
-<pre><code class="language-python">import pandas as pd
-import numpy as np
-from sklearn.metrics import roc_auc_score
-import sys
-dirs = sys.argv[1]
-def get_csv_results(predict_path, csv_path):
-    predict = pd.read_pickle(predict_path)
-    smi_list, predict_list = [], []
-    for batch in predict:
-        sz = batch[&quot;bsz&quot;]
-        for i in range(sz):
-            smi_list.append(batch[&quot;smi_name&quot;][i])
-            predict_list.append(batch[&quot;prob&quot;][i][1].cpu().tolist())
-    predict_df = pd.DataFrame({&quot;smiles&quot;: smi_list, &quot;predict_prob&quot;: predict_list})
-    predict_df = predict_df.groupby(&quot;smiles&quot;)[&quot;predict_prob&quot;].mean().reset_index()
-    predict_df.to_csv(csv_path,index=False)
-    return predict_df
-
-predict_path='./infer_demo/%s_test.out.pkl'%dirs  
-csv_path='./infer_demo/%s.csv'%dirs
-predict_df = get_csv_results(predict_path, csv_path)
-
-data_df = pd.read_csv('./BBBP/test.csv')
-
-total_df = pd.merge(data_df, predict_df, on='smiles')
-
-y = total_df['p_np'].to_list()
-y_pred = total_df['predict_prob'].to_list()
-
-score = roc_auc_score(y, y_pred)
-print(&quot;AUC = %s&quot;%score)
-</code></pre>
+<h2 id="ai-for-drug-design">AI for Drug Design的一些思考</h2>
+<ol>
+<li>训练集的大小和质量对于AI模型的性能影响巨大，预训练模型之所以能在下游任务取得良好性能，在于它的训练过程是自监督训练，可以获取庞大的训练集。</li>
+<li>预训练模型在用于下游任务时，分别在对应数据集上进行训练，输出值是一个数值。如果在微调时，将模型的输出像预训练过程一样，设为多个值，让预训练模型在多个下游任务的数据集上同时进行训练，会不会让模型学习到更多的信息？</li>
+<li>可以将uni-mol用于打分函数权重预测，即为受体结合口袋中的每个原子都分配独立的打分函数权重，不过需要修改模型的输出方式。</li>
+</ol>
               
             </div>
           </div><footer>

@@ -51,7 +51,7 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#_2">输入</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#_3">注意力头</a>
+    <li class="toctree-l3"><a class="reference internal" href="#_3">输出</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#representation">表征(representation)</a>
     </li>
@@ -111,9 +111,9 @@
 <li>由于本身的置换不变性，Transformer模型对输入序列的位置没有分辨能力，为了使模型学习到化合物分子的3D信息，Uni-Mol将坐标信息嵌入到信息传播过程，所以Uni-Mol有两个输入，分别是atom types和atom coordinates。  </li>
 <li>在预训练的自监督学习中，Uni-Mol和Transformer都需要对输入进行mask操作，Uni-Mol关于坐标的mask使用了<em>noise range</em>方法，所谓<em>noise range</em>是指在原始坐标上加一个处于一定范围内的随机坐标。 </li>
 </ol>
-<h3 id="_3">注意力头</h3>
+<h3 id="_3">输出</h3>
 <ol>
-<li>Uni-Mol构建了三种用于输出的head，分别关注模型中的Atom Type，Coordinates以及Pair-dist信息</li>
+<li>Uni-Mol构建了三种用于处理输出信息的head，分别关注模型中的Atom Type，Coordinates以及Pair-dist信息</li>
 </ol>
 <h3 id="representation">表征(representation)</h3>
 <ol>
@@ -668,7 +668,7 @@ class TransformerEncoderLayer(nn.Module):
         modules similar to the original Transformer implementation.
         &quot;&quot;&quot;
         residual = x
-        # 层正则化的作用
+        # 层正则化的作用在于稳定输出分布，对样本量不敏感
         if not self.post_ln:
             x = self.self_attn_layer_norm(x)
 
